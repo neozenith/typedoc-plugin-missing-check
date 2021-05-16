@@ -1,0 +1,51 @@
+{
+  "name": "typedoc-plugin-missing-check",
+  "version": "0.1.0",
+  "description": "TypeDoc plugin to check for missing or empty documentation.",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "self-doc": "npm run build && typedoc --plugin . src/index.ts",
+    "format": "prettier --write src/*",
+    "lint": "eslint",
+    "test": "jest",
+    "qa": "npm run format && npm run lint && npm run test",
+    "prepublish": "npm run lint && npm run test && npm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/neozenith/typedoc-plugin-missing-check.git"
+  },
+  "keywords": [
+    "typedocplugin",
+    "typedoc"
+  ],
+  "author": "Josh Peak",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/neozenith/typedoc-plugin-missing-check/issues"
+  },
+  "homepage": "https://github.com/neozenith/typedoc-plugin-missing-check#readme",
+  "jest": {
+    "preset": "ts-jest",
+    "testEnvironment": "node"
+  },
+  "peerDependencies": {
+    "typedoc": "^0.20.36"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^4.23.0",
+    "@typescript-eslint/parser": "^4.23.0",
+    "eslint": "^7.26.0",
+    "eslint-config-prettier": "^8.3.0",
+    "eslint-config-standard": "^16.0.2",
+    "eslint-plugin-import": "^2.23.2",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-promise": "^4.3.1",
+    "jest": "^26.6.3",
+    "prettier": "^2.3.0",
+    "ts-jest": "^26.5.6",
+    "typedoc": "^0.20.36",
+    "typescript": "^4.2.4"
+  }
+}
