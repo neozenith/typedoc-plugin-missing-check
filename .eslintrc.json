@@ -11,5 +11,8 @@
     "ecmaVersion": 12
   },
   "plugins": ["@typescript-eslint"],
-  "rules": {}
+  "rules": {
+    "semi": [2, "always"],
+    "quotes": [2, "double"]
+  }
 }
