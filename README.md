@@ -37,3 +37,7 @@ npx typedoc --plugin . src/index.ts
 ## Contributing
 
 Report issues on Github, or more appreciated would be opening a pull request and we can collaborate on the needed change over the line.
+
+## TODO
+
+ - Look at [CommentPlugin](https://github.com/TypeStrong/typedoc/blob/master/src/lib/converter/plugins/CommentPlugin.ts) for how to implement the checks.
