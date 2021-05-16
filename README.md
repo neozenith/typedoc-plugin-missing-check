@@ -1,5 +1,7 @@
 # 🤷‍♀️ Typedoc Plugin: Missing Check 🤷‍♂️
 
+[![CI](https://github.com/neozenith/typedoc-plugin-missing-check/actions/workflows/ci.yml/badge.svg)](https://github.com/neozenith/typedoc-plugin-missing-check/actions/workflows/ci.yml)
+
 TypeDoc Plugin to check if typescript documentation is empty or missing.
 
 A plugin for [TypeDoc](https://github.com/TypeStrong/typedoc) that check TypeScript API documentation actually exists and throws errors when _it is accidentally forgotten_.
