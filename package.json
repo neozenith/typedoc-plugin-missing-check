@@ -25,7 +25,7 @@
   "bugs": {
     "url": "https://github.com/neozenith/typedoc-plugin-missing-check/issues"
   },
-  "homepage": "https://github.com/neozenith/typedoc-plugin-missing-check#readme",
+  "homepage": "https://joshpeak.net/typedoc-plugin-missing-check/",
   "jest": {
     "preset": "ts-jest",
     "testEnvironment": "node"
