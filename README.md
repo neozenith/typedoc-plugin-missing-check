@@ -52,9 +52,9 @@ npx typedoc --plugin . src/
 ```
 ## Contributing
 
-Report issues on Github, or more appreciated would be opening a pull request and we can collaborate on the needed change over the line.
+Report issues on Github, or more appreciated would be opening a pull request and we can collaborate on getting the needed change over the line.
 
-Since you will need to create a fork to open up a new PR, you can also then immediately use that version with:
+Since you will need to create a fork to open up a new PR, you can also then immediately use your updated version with:
 
 ```bash
 npm install --save-dev https://github.com/{USER}/typedoc-plugin-missing-check/tarball/{BRANCH}
