@@ -56,4 +56,13 @@ Report issues on Github, or more appreciated would be opening a pull request and
 
 ## TODO
 
- - Look at [CommentPlugin](https://github.com/TypeStrong/typedoc/blob/master/src/lib/converter/plugins/CommentPlugin.ts) for how to implement the checks.
+### Next 
+
+ - Create jest test suite
+ - Handle missing class constructor docs
+ - Handle missing module docs
+
+### Later
+
+ - Automate process publishing of docs and to npm process after successful CI and merge to `main`.
+ - Automate Github Release page.
