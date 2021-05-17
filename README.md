@@ -17,7 +17,7 @@ npm install --save-dev typedoc typedoc-plugin-missing-check
 Usage is the same as documented at [TypeDoc](https://typedoc.org/guides/installation/#command-line-interface).
 
 ```bash
-typedoc --out docs src/index.ts
+typedoc src/
 ```
 
 ## Development
@@ -34,7 +34,7 @@ Run a self check since there are no tests just yet.
 
 ```bash
 npm run build
-npx typedoc --plugin . src/index.ts
+npx typedoc --plugin . src/
 ```
 ## Contributing
 

@@ -5,7 +5,7 @@
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
-    "self-doc": "npm run fix && npm run build && typedoc --plugin . src/index.ts",
+    "self-doc": "npm run fix && npm run build && typedoc --plugin . src/",
     "fix": "eslint --fix src/*",
     "lint": "eslint src/*",
     "test": "jest --passWithNoTests",
