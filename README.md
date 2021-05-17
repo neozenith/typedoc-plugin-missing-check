@@ -34,6 +34,29 @@ typedoc --missing-check-level private src/
 typedoc --missing-check-disabled src/
 ```
 
+These options can also be configured in your `typedoc.json` or `tsconfig.json` like so:
+
+`typedoc.json`
+```json
+{
+    "missing-check-disabled": false,
+    "missing-check-level": "public"
+}
+```
+
+`tsconfig.json`
+```json
+{
+    "compilerOptions": {
+        ...
+    },
+    "typedocOptions": {
+        "missing-check-disabled": false,
+        "missing-check-level": "public"
+    }    
+}
+```
+
 ## Development
 
 Get setup
