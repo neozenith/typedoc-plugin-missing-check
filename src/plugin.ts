@@ -6,6 +6,8 @@
  *
  * Plugin Template inspired by:
  * https://github.com/krisztianb/typedoc-plugin-base/blob/master/src/example_plugin.ts
+ *
+ * @module
  */
 
 import { Context } from "typedoc/dist/lib/converter/context";
@@ -104,7 +106,7 @@ export class MissingCheckPlugin {
       const ignorable = [ReflectionKind.ConstructorSignature];
 
       // TODO: Get these checks working...
-      const shouldNotBeIgnorableButUnhandledForNow = [ReflectionKind.Constructor, ReflectionKind.Module, ReflectionKind.Method];
+      const shouldNotBeIgnorableButUnhandledForNow = [ReflectionKind.Constructor, ReflectionKind.Method];
 
       if (ignorable.includes(reflection.kind)) continue;
       if (shouldNotBeIgnorableButUnhandledForNow.includes(reflection.kind)) continue;
@@ -135,7 +137,10 @@ export class MissingCheckPlugin {
         let failureCondition = false;
 
         if (reflection.comment === undefined) {
-          reflectionObj.reason = `Documentation comment missing for ${reflectionObj.kind} named '${reflectionObj.name}'`;
+          reflectionObj.reason = `Documentation comment missing for ${reflectionObj.kind} named '${reflectionObj.name}'.`;
+
+          if (reflection.kindOf(ReflectionKind.Module)) reflectionObj.reason += " You may need to add a @module tag. http://typedoc.org/guides/doccomments/#files";
+
           failureCondition = true;
         } else if (reflection.comment !== undefined && (reflection.comment.shortText.length + reflection.comment.text.length === 0)) {
           reflectionObj.reason = `Documentation comment empty for ${reflectionObj.kind} named ${reflectionObj.name}`;

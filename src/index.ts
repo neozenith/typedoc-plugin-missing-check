@@ -1,5 +1,6 @@
 /**
  * TypeDoc plugin entrypoint to register plugin.
+ * @module
  */
 
 import { PluginHost } from "typedoc/dist/lib/utils/plugins";

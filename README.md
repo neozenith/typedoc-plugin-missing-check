@@ -74,7 +74,7 @@ npm install --save-dev typedoc-plugin-missing-check
 
  - Create jest test suite
  - Handle missing class constructor docs
- - Handle missing module docs
+ - Handle missing method docs 
 
 ### Later
 
