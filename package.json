@@ -3,6 +3,12 @@
   "version": "0.2.0",
   "description": "TypeDoc plugin to check for missing or empty documentation.",
   "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist/**/*.js",
+    "dist/**/*.js.map",
+    "dist/**/*.d.ts"
+  ],
   "scripts": {
     "build": "tsc",
     "self-doc": "npm run fix && npm run build && typedoc --plugin . src/",
@@ -10,7 +16,7 @@
     "lint": "eslint src/*",
     "test": "jest --passWithNoTests",
     "qa": "npm run fix && npm run lint && npm run test",
-    "prepublish": "npm run lint && npm run test && npm run build"
+    "prepublishOnly": "npm run lint && npm run test && npm run build"
   },
   "repository": {
     "type": "git",
