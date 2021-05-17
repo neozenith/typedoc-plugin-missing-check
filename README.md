@@ -54,6 +54,20 @@ npx typedoc --plugin . src/
 
 Report issues on Github, or more appreciated would be opening a pull request and we can collaborate on the needed change over the line.
 
+Since you will need to create a fork to open up a new PR, you can also then immediately use that version with:
+
+```bash
+npm install --save-dev https://github.com/{USER}/typedoc-plugin-missing-check/tarball/{BRANCH}
+```
+
+See this Stackoverflow article ["How to install an npm package from github directly?"](https://stackoverflow.com/questions/17509669/how-to-install-an-npm-package-from-github-directly) for more details.
+
+Then revert back to using this version once your PR is accepted and published:
+
+```bash
+npm install --save-dev typedoc-plugin-missing-check
+```
+
 ## TODO
 
 ### Next 
