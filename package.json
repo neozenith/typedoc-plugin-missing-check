@@ -1,6 +1,6 @@
 {
   "name": "typedoc-plugin-missing-check",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "TypeDoc plugin to check for missing or empty documentation.",
   "main": "dist/index.js",
   "scripts": {

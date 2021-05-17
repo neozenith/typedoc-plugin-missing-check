@@ -14,7 +14,9 @@
     "**/*.ts"
   ],
   "typedocOptions": {
-    "logLevel": "Info",
+    "logLevel": "Error",
+    "missing-check-disabled": false,
+    "missing-check-level": "public", // Could have values public, protected, private
     "includeVersion": true
   }
 }

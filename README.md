@@ -20,6 +20,20 @@ Usage is the same as documented at [TypeDoc](https://typedoc.org/guides/installa
 typedoc src/
 ```
 
+```bash
+# Check only public or higher (default).
+typedoc --missing-check-level public src/
+
+# Check only protected and public.
+typedoc --missing-check-level protected src/
+
+# Check all.
+typedoc --missing-check-level private src/
+
+# Disable missingness checks.
+typedoc --missing-check-disabled src/
+```
+
 ## Development
 
 Get setup

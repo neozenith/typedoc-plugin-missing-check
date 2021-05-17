@@ -7,11 +7,15 @@
  * Plugin Template inspired by:
  * https://github.com/krisztianb/typedoc-plugin-base/blob/master/src/example_plugin.ts
  */
+
 import { Context } from "typedoc/dist/lib/converter/context";
-import { ReflectionKind } from "typedoc/dist/lib/models";
+import { ReflectionFlags, ReflectionKind } from "typedoc/dist/lib/models";
 import { Converter, Application, ParameterType, BooleanDeclarationOption, StringDeclarationOption } from "typedoc";
 import { LogLevel } from "typedoc/dist/lib/utils";
 
+/**
+ * MissingCheckPlugin checks resolved symbols in the Converter for adequate documentation.
+ */
 export class MissingCheckPlugin {
   /** A boolean option of this plugin. */
   protected disabledOption: BooleanDeclarationOption = {
@@ -29,17 +33,23 @@ export class MissingCheckPlugin {
     defaultValue: "public"
   };
 
-  /**
-   * List of accumulated errors to spit out when resolving finishes.
-   */
-  private errors: any[] = [];
+  private typedoc: Application;
 
   /**
-   * Create a new MissingCheckPlugin instance.
+   * Instantiate new MissingCheckPlugin.
+   *
+   * @param typedoc - Core TypeDoc Application processing
    */
-  initialize (typedoc: Application) {
-    this.addOptionsToApplication(typedoc);
-    this.subscribeToApplicationEvents(typedoc);
+  public constructor (typedoc: Application) {
+    this.typedoc = typedoc;
+  }
+
+  /**
+   * Initialise functionality of plugin by registering options and listeners.
+   */
+  public init (): void {
+    this.addOptionsToApplication(this.typedoc);
+    this.subscribeToApplicationEvents(this.typedoc);
   }
 
   /**
@@ -47,7 +57,7 @@ export class MissingCheckPlugin {
    *
    * @param typedoc The TypeDoc Application
    */
-  protected addOptionsToApplication (typedoc: Application): void {
+  private addOptionsToApplication (typedoc: Application): void {
     typedoc.options.addDeclaration(this.disabledOption);
     typedoc.options.addDeclaration(this.missingCheckLevelOption);
   }
@@ -56,7 +66,7 @@ export class MissingCheckPlugin {
      * Subscribes to events of the application so the plugin can do its work in the particular doc generation phases.
      * @param typedoc The TypeDoc Application.
      */
-  protected subscribeToApplicationEvents (typedoc: Application): void {
+  private subscribeToApplicationEvents (typedoc: Application): void {
     // typedoc.converter.on(Converter.EVENT_BEGIN, (context: Context) => this.onConverterBegin(context));
     // typedoc.converter.on(Converter.EVENT_FILE_BEGIN, (context: Context) => this.onConverterFileBegin(context));
     // typedoc.converter.on(Converter.EVENT_CREATE_DECLARATION, (context: Context) => this.onConverterCreateDeclaration(context));
@@ -81,30 +91,73 @@ export class MissingCheckPlugin {
    * @param context  The context object describing the current state the converter is in.
    */
   private onConverterResolveEnd (_context: Context) {
-    console.log("RESOLVE END");
+    const options = _context.converter.owner.application.options;
+    const disabled = options.getValue(this.disabledOption.name);
+    const scopeLevel = options.getValue(this.missingCheckLevelOption.name) as string;
     const logger = _context.logger;
+    if (disabled) {
+      logger.log("Missing Check plugin disabled");
+      return;
+    }
+
     for (const reflection of _context.project.getReflectionsByKind(ReflectionKind.All)) {
-      const output: Record<string, any> = {
+      const ignorable = [ReflectionKind.ConstructorSignature];
+
+      // TODO: Get these checks working...
+      const shouldNotBeIgnorableButUnhandledForNow = [ReflectionKind.Constructor, ReflectionKind.Module, ReflectionKind.Method];
+
+      if (ignorable.includes(reflection.kind)) continue;
+      if (shouldNotBeIgnorableButUnhandledForNow.includes(reflection.kind)) continue;
+      if (reflection.kindOf(ReflectionKind.Function) && reflection.parent?.kindOf(ReflectionKind.Module)) continue;
+
+      const reflectionObj: Record<string, any> = {
         kind: reflection.kindString,
-        name: reflection.getFullName(),
+        name: reflection.name,
+        fullname: reflection.getFullName(),
         comment: reflection.comment,
         flags: reflection.flags
       };
 
       if (reflection.sources !== undefined) {
-        output.location = reflection.sources.map(s => `${s.fileName}:${s.line}:${s.character}`);
+        reflectionObj.location = reflection.sources.map(s => `${s.fileName}:${s.line}:${s.character}`);
       } else if (reflection.parent?.sources !== undefined) {
-        output.location = reflection.parent?.sources.map(s => `${s.fileName}:${s.line}:${s.character}`);
+        reflectionObj.location = reflection.parent?.sources.map(s => `${s.fileName}:${s.line}:${s.character}`);
       }
-      const failureCondition = reflection.comment === undefined || (reflection.comment !== undefined && (reflection.comment.shortText.length + reflection.comment.text.length === 0));
-      const level = (failureCondition) ? LogLevel.Warn : LogLevel.Verbose;
 
-      // TODO: factor in Options to disable checks or filter by scope levels
-      // TODO: resolve the scope level for each reflection type, may need to reach up to parent and extract from `flags`.
+      let flags = reflection.flags;
+      if (reflection.kindOf(ReflectionKind.CallSignature) && reflection.parent) {
+        flags = reflection.parent.flags;
+      } else if (reflection.kindOf(ReflectionKind.Parameter) && reflection.parent && reflection.parent.parent) {
+        flags = reflection.parent.parent.flags;
+      }
 
-      logger.log("=========", level);
-      logger.log(JSON.stringify(output), level);
-      // console.log(reflection);
+      if (this.shouldCheck(scopeLevel, flags)) {
+        let failureCondition = false;
+
+        if (reflection.comment === undefined) {
+          reflectionObj.reason = `Documentation comment missing for ${reflectionObj.kind} named '${reflectionObj.name}'`;
+          failureCondition = true;
+        } else if (reflection.comment !== undefined && (reflection.comment.shortText.length + reflection.comment.text.length === 0)) {
+          reflectionObj.reason = `Documentation comment empty for ${reflectionObj.kind} named ${reflectionObj.name}`;
+          failureCondition = true;
+        }
+
+        if (failureCondition) logger.log(this.format(reflectionObj), LogLevel.Error);
+      }
     }
+  }
+
+  private shouldCheck (scopeLevel: string, flags: ReflectionFlags) {
+    const publicLevel = (!flags.isProtected && !flags.isPrivate);
+    const protectedLevel = !flags.isPrivate;
+    const privateLevel = true;
+
+    return (scopeLevel === "public" && publicLevel) ||
+    (scopeLevel === "protected" && protectedLevel) ||
+    (scopeLevel === "private" && privateLevel);
+  }
+
+  private format (reflectionObj: Record<string, any>): string {
+    return `(missing-check) ${reflectionObj.location} ${reflectionObj.reason ?? reflectionObj.kind} ${JSON.stringify(reflectionObj.comment)}`;
   }
 }
