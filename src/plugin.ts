@@ -11,7 +11,7 @@
  */
 
 import { Context } from "typedoc/dist/lib/converter/context";
-import { ReflectionFlags, ReflectionKind } from "typedoc/dist/lib/models";
+import { Reflection, ReflectionFlags, ReflectionKind } from "typedoc/dist/lib/models";
 import { Converter, Application, ParameterType, BooleanDeclarationOption, StringDeclarationOption } from "typedoc";
 import { LogLevel } from "typedoc/dist/lib/utils";
 
@@ -19,7 +19,7 @@ import { LogLevel } from "typedoc/dist/lib/utils";
  * MissingCheckPlugin checks resolved symbols in the Converter for adequate documentation.
  */
 export class MissingCheckPlugin {
-  /** A boolean option of this plugin. */
+  /** Enable/disable this plugin. */
   protected disabledOption: BooleanDeclarationOption = {
     type: ParameterType.Boolean,
     name: "missing-check-disabled",
@@ -27,7 +27,15 @@ export class MissingCheckPlugin {
     defaultValue: false
   };
 
-  /** An enum option of this plugin. */
+  /** Enable/disable verbose error messages. */
+  protected verboseOption: BooleanDeclarationOption = {
+    type: ParameterType.Boolean,
+    name: "missing-check-verbose",
+    help: "[Missing Check Plugin] Option to enable more verbose error messages.",
+    defaultValue: false
+  };
+
+  /** Scope level to run check across. */
   protected missingCheckLevelOption: StringDeclarationOption = {
     type: ParameterType.String,
     name: "missing-check-level",
@@ -61,6 +69,7 @@ export class MissingCheckPlugin {
    */
   private addOptionsToApplication (typedoc: Application): void {
     typedoc.options.addDeclaration(this.disabledOption);
+    typedoc.options.addDeclaration(this.verboseOption);
     typedoc.options.addDeclaration(this.missingCheckLevelOption);
   }
 
@@ -95,60 +104,98 @@ export class MissingCheckPlugin {
   private onConverterResolveEnd (_context: Context) {
     const options = _context.converter.owner.application.options;
     const disabled = options.getValue(this.disabledOption.name);
+    const verbose = options.getValue(this.verboseOption.name) as boolean;
     const scopeLevel = options.getValue(this.missingCheckLevelOption.name) as string;
+
     const logger = _context.logger;
     if (disabled) {
       logger.log("Missing Check plugin disabled");
       return;
     }
 
+    let failureCount = 0;
+
     for (const reflection of _context.project.getReflectionsByKind(ReflectionKind.All)) {
-      const ignorable = [ReflectionKind.ConstructorSignature];
+      if (this.checkReflection(reflection, _context, scopeLevel, verbose)) {
+        failureCount += 1;
+      }
+    }
 
-      // TODO: Get these checks working...
-      const shouldNotBeIgnorableButUnhandledForNow = [ReflectionKind.Constructor, ReflectionKind.Method];
+    if (failureCount) {
+      let message = `Found ${failureCount} errors when checking for missing documentation.`;
+      if (!verbose) message += "Consider using --missing-check-verbose for more detailed output";
 
-      if (ignorable.includes(reflection.kind)) continue;
-      if (shouldNotBeIgnorableButUnhandledForNow.includes(reflection.kind)) continue;
-      if (reflection.kindOf(ReflectionKind.Function) && reflection.parent?.kindOf(ReflectionKind.Module)) continue;
+      logger.error(message);
+    }
+  }
 
-      const reflectionObj: Record<string, any> = {
-        kind: reflection.kindString,
-        name: reflection.name,
-        fullname: reflection.getFullName(),
-        comment: reflection.comment,
-        flags: reflection.flags
-      };
+  private checkReflection (reflection: Reflection, _context: Context, scopeLevel: string, verbose: boolean): boolean {
+    const logger = _context.logger;
 
-      if (reflection.sources !== undefined) {
-        reflectionObj.location = reflection.sources.map(s => `${s.fileName}:${s.line}:${s.character}`);
-      } else if (reflection.parent?.sources !== undefined) {
-        reflectionObj.location = reflection.parent?.sources.map(s => `${s.fileName}:${s.line}:${s.character}`);
+    const ignorable: string[] = [
+      "Project::Class::Constructor",
+      "Project::Class::Property",
+      "Project::Class::Method"
+    ]; // Load ignorable list from Options??
+
+    // TODO: Get these checks working...
+    const shouldNotBeIgnorableButUnhandledForNow: string[] = [
+      "Project::Class::Constructor::Constructor signature::Parameter",
+      "Project::Class::Constructor::Constructor signature",
+      "Module::Class::Constructor",
+      "Module::Class::Method",
+      "Module::Function"
+    ];
+
+    const thisKindChain = this.kindChainNames(reflection).join("::");
+
+    if (thisKindChain.includes("Type literal") || thisKindChain.includes("Type alias")) return false;
+    if (ignorable.includes(thisKindChain)) return false;
+    if (shouldNotBeIgnorableButUnhandledForNow.includes(thisKindChain)) return false;
+
+    const reflectionObj: Record<string, any> = {
+      kind: reflection.kindString,
+      kindChain: thisKindChain,
+      name: reflection.name,
+      fullname: reflection.getFullName(),
+      comment: reflection.comment,
+      flags: reflection.flags
+    };
+
+    if (reflection.sources !== undefined) {
+      reflectionObj.location = reflection.sources.map(s => `${s.fileName}:${s.line}:${s.character}`);
+    } else if (reflection.parent?.sources !== undefined) {
+      reflectionObj.location = reflection.parent?.sources.map(s => `${s.fileName}:${s.line}:${s.character}`);
+    }
+
+    let flags = reflection.flags;
+    if (reflection.kindOf(ReflectionKind.CallSignature) && reflection.parent) {
+      flags = reflection.parent.flags;
+    } else if (reflection.kindOf(ReflectionKind.Parameter) && reflection.parent && reflection.parent.parent) {
+      flags = reflection.parent.parent.flags;
+    }
+
+    if (this.shouldCheck(scopeLevel, flags)) {
+      let failureCondition = false;
+
+      if (reflection.comment === undefined) {
+        reflectionObj.reason = `Documentation comment missing for ${reflectionObj.kind} named '${reflectionObj.name}'.`;
+
+        if (reflection.kindOf(ReflectionKind.Module)) reflectionObj.reason += " You may need to add a @module tag. http://typedoc.org/guides/doccomments/#files";
+
+        failureCondition = true;
+      } else if (reflection.comment !== undefined && (reflection.comment.shortText.length + reflection.comment.text.length === 0)) {
+        reflectionObj.reason = `Documentation comment empty for ${reflectionObj.kind} named ${reflectionObj.name}`;
+        failureCondition = true;
       }
 
-      let flags = reflection.flags;
-      if (reflection.kindOf(ReflectionKind.CallSignature) && reflection.parent) {
-        flags = reflection.parent.flags;
-      } else if (reflection.kindOf(ReflectionKind.Parameter) && reflection.parent && reflection.parent.parent) {
-        flags = reflection.parent.parent.flags;
-      }
+      if (reflectionObj?.reason && verbose) reflectionObj.reason += JSON.stringify(reflectionObj, null, 2);
 
-      if (this.shouldCheck(scopeLevel, flags)) {
-        let failureCondition = false;
+      if (failureCondition) logger.log(this.format(reflectionObj), LogLevel.Error);
 
-        if (reflection.comment === undefined) {
-          reflectionObj.reason = `Documentation comment missing for ${reflectionObj.kind} named '${reflectionObj.name}'.`;
-
-          if (reflection.kindOf(ReflectionKind.Module)) reflectionObj.reason += " You may need to add a @module tag. http://typedoc.org/guides/doccomments/#files";
-
-          failureCondition = true;
-        } else if (reflection.comment !== undefined && (reflection.comment.shortText.length + reflection.comment.text.length === 0)) {
-          reflectionObj.reason = `Documentation comment empty for ${reflectionObj.kind} named ${reflectionObj.name}`;
-          failureCondition = true;
-        }
-
-        if (failureCondition) logger.log(this.format(reflectionObj), LogLevel.Error);
-      }
+      return failureCondition;
+    } else {
+      return false;
     }
   }
 
@@ -160,6 +207,26 @@ export class MissingCheckPlugin {
     return (scopeLevel === "public" && publicLevel) ||
     (scopeLevel === "protected" && protectedLevel) ||
     (scopeLevel === "private" && privateLevel);
+  }
+
+  private kindChain (reflection: Reflection): Array<ReflectionKind> {
+    const output: Array<ReflectionKind> = [];
+    let currentReflection: Reflection | undefined = reflection;
+    while (currentReflection && currentReflection.kind) {
+      output.push(currentReflection.kind);
+      currentReflection = currentReflection.parent ?? undefined;
+    }
+    return output.reverse();
+  }
+
+  private kindChainNames (reflection: Reflection): Array<String | undefined> {
+    const output: Array<String | undefined> = [];
+    let currentReflection: Reflection | undefined = reflection;
+    while (currentReflection && currentReflection.kindString) {
+      output.push(currentReflection.kindString);
+      currentReflection = currentReflection.parent ?? undefined;
+    }
+    return output.reverse();
   }
 
   private format (reflectionObj: Record<string, any>): string {

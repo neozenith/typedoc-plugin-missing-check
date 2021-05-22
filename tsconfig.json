@@ -18,6 +18,7 @@
   "typedocOptions": {
     "logLevel": "Error",
     "missing-check-disabled": false,
+    "missing-check-verbose": true,
     "missing-check-level": "public", // Could have values public, protected, private
     "includeVersion": true
   }

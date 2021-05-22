@@ -32,6 +32,9 @@ typedoc --missing-check-level private src/
 
 # Disable missingness checks.
 typedoc --missing-check-disabled src/
+
+# Enable more verbose error messages.
+typedoc --missing-check-verbose src/
 ```
 
 These options can also be configured in your `typedoc.json` or `tsconfig.json` like so:
@@ -40,6 +43,7 @@ These options can also be configured in your `typedoc.json` or `tsconfig.json` l
 ```json
 {
     "missing-check-disabled": false,
+    "missing-check-verbose": false,
     "missing-check-level": "public"
 }
 ```
@@ -52,6 +56,7 @@ These options can also be configured in your `typedoc.json` or `tsconfig.json` l
     },
     "typedocOptions": {
         "missing-check-disabled": false,
+        "missing-check-verbose": false,
         "missing-check-level": "public"
     }    
 }
